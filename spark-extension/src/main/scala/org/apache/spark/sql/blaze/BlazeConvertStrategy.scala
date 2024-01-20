@@ -86,7 +86,7 @@ object BlazeConvertStrategy extends Logging {
       case e: BroadcastExchangeExec =>
         e.setTagValue(convertStrategyTag, AlwaysConvert)
       case e: FileSourceScanExec =>
-        e.setTagValue(convertStrategyTag, AlwaysConvert)
+        e.setTagValue(convertStrategyTag, NeverConvert)
       case e: ProjectExec if isAlwaysConvert(e.child) =>
         e.setTagValue(convertStrategyTag, AlwaysConvert)
       case e: FilterExec if isAlwaysConvert(e.child) =>
