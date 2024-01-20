@@ -111,31 +111,12 @@ object BlazeConverters extends Logging {
 
   import org.apache.spark.sql.catalyst.plans._
   import org.apache.spark.sql.catalyst.optimizer._
-  var _UnusedQueryPlan: QueryPlan[_] = _
-  var _UnusedOptimizer: Optimizer = _
-
-  def convertSparkPlanRecursively(exec: SparkPlan): SparkPlan = {
-    // convert
-    var danglingConverted: Seq[SparkPlan] = Nil
-    exec.foreachUp { exec =>
-      val (newDanglingConverted, newChildren) =
-        danglingConverted.splitAt(danglingConverted.length - exec.children.length)
-
-      var newExec = exec.withNewChildren(newChildren)
-      if (!isNeverConvert(exec)) {
-        newExec = convertSparkPlan(newExec)
-      }
-      danglingConverted = newDanglingConverted :+ newExec
-    }
-    danglingConverted.head
-  }
 
   def convertSparkPlan(exec: SparkPlan): SparkPlan = {
     exec match {
       case e: ShuffleExchangeExec => tryConvert(e, convertShuffleExchangeExec)
       case e: BroadcastExchangeExec => tryConvert(e, convertBroadcastExchangeExec)
-      case e: FileSourceScanExec if enableScan => // scan
-        tryConvert(e, convertFileSourceScanExec)
+      case e: FileSourceScanExec => e // scan
       case e: ProjectExec if enableProject => // project
         tryConvert(e, convertProjectExec)
       case e: FilterExec if enableFilter => // filter

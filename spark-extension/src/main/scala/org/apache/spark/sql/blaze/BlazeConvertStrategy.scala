@@ -47,7 +47,7 @@ object BlazeConvertStrategy extends Logging {
   val convertibleTag: TreeNodeTag[Boolean] = TreeNodeTag("blaze.convertible")
   val convertStrategyTag: TreeNodeTag[ConvertStrategy] = TreeNodeTag("blaze.convert.strategy")
 
-  def apply(exec: SparkPlan): Unit = {
+  def apply(exec: SparkPlan): SparkPlan = {
     exec.foreach(_.setTagValue(convertibleTag, true))
     exec.foreach(_.setTagValue(convertStrategyTag, Default))
 
@@ -94,7 +94,7 @@ object BlazeConvertStrategy extends Logging {
       case e: SortExec => // prefer native sort even if child is non-native
         e.setTagValue(convertStrategyTag, AlwaysConvert)
       case e: UnionExec
-          if e.children.count(isAlwaysConvert) >= e.children.count(isNeverConvert) =>
+        if e.children.count(isAlwaysConvert) >= e.children.count(isNeverConvert) =>
         e.setTagValue(convertStrategyTag, AlwaysConvert)
       case e: SortMergeJoinExec if e.children.exists(isAlwaysConvert) =>
         e.setTagValue(convertStrategyTag, AlwaysConvert)
@@ -129,6 +129,8 @@ object BlazeConvertStrategy extends Logging {
         // not marked -- default to NeverConvert
         e.setTagValue(convertStrategyTag, NeverConvert)
     }
+
+    danglingChildren.head
   }
 
   def isNeverConvert(exec: SparkPlan): Boolean = {
