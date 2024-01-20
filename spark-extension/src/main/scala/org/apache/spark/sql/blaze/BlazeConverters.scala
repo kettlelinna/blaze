@@ -116,7 +116,10 @@ object BlazeConverters extends Logging {
     exec match {
       case e: ShuffleExchangeExec => tryConvert(e, convertShuffleExchangeExec)
       case e: BroadcastExchangeExec => tryConvert(e, convertBroadcastExchangeExec)
-      case e: FileSourceScanExec => e // scan
+      case e: FileSourceScanExec =>
+        e.setTagValue(convertibleTag, false)
+        e.setTagValue(convertStrategyTag, NeverConvert)
+        e // scan
       case e: ProjectExec if enableProject => // project
         tryConvert(e, convertProjectExec)
       case e: FilterExec if enableFilter => // filter
