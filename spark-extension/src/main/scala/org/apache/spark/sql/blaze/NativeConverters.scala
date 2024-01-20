@@ -310,7 +310,7 @@ object NativeConverters extends Logging {
       //  N - fallback the whole expression
       numInconvertibleChildren match {
         case 0 if sparkExpr.deterministic => convertExprWithFallback(sparkExpr, isPruningExpr = false, fallbackToError)
-        case 0 || 1 if sparkExpr.deterministic =>
+        case 0 | 1 if sparkExpr.deterministic =>
           val childrenConverted = sparkExpr.mapChildren { child =>
             try {
               val converted =
