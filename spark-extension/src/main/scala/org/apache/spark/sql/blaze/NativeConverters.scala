@@ -1092,7 +1092,10 @@ object NativeConverters extends Logging {
     Utils.tryWithResource(new ByteArrayInputStream(serialized)) { bis =>
       Utils.tryWithResource(new ObjectInputStream(bis)) { ois =>
         val expr = ois.readObject().asInstanceOf[Expression with Serializable]
-        val paramsSchema = ois.readObject().asInstanceOf[StructType]
+        logInfo(s"==================${expr.sql}=====================")
+        val obj = ois.readObject()
+        logInfo(s"=================${obj}===================")
+        val paramsSchema = obj.asInstanceOf[StructType]
         (expr, paramsSchema)
       }
     }
