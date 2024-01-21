@@ -94,7 +94,7 @@ object BlazeConvertStrategy extends Logging {
       case e: SortExec => // prefer native sort even if child is non-native
         e.setTagValue(convertStrategyTag, AlwaysConvert)
       case e: UnionExec
-        if e.children.count(isAlwaysConvert) >= e.children.count(isNeverConvert) =>
+          if e.children.count(isAlwaysConvert) >= e.children.count(isNeverConvert) =>
         e.setTagValue(convertStrategyTag, AlwaysConvert)
       case e: SortMergeJoinExec if e.children.exists(isAlwaysConvert) =>
         e.setTagValue(convertStrategyTag, AlwaysConvert)
