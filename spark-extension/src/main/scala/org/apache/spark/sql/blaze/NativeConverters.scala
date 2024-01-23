@@ -356,7 +356,11 @@ object NativeConverters extends Logging {
         val serialized =
           serializeExpression(bound.asInstanceOf[Expression with Serializable], paramsSchema)
 
+        val recoverExpr = deserializeExpression(serialized)
+        logInfo("+++++++++++++++++++++++++++++++++++++++++++" + recoverExpr._1.dataType.toString)
+
         // build SparkUDFWrapperExpr
+        // TODO
         pb.PhysicalExprNode
           .newBuilder()
           .setSparkUdfWrapperExpr(
