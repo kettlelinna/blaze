@@ -15,8 +15,9 @@
  */
 package org.apache.spark.sql.blaze
 
-import java.nio.ByteBuffer
+import com.esotericsoftware.kryo.Kryo
 
+import java.nio.ByteBuffer
 import org.apache.arrow.c.ArrowArray
 import org.apache.arrow.c.Data
 import org.apache.arrow.vector.VectorSchemaRoot
@@ -24,6 +25,7 @@ import org.apache.arrow.vector.dictionary.DictionaryProvider
 import org.apache.arrow.vector.dictionary.DictionaryProvider.MapDictionaryProvider
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.blaze.NativeConverters.MyExpression
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Nondeterministic
 import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
@@ -35,17 +37,23 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
 
 case class SparkUDFWrapperContext(serialized: ByteBuffer) extends Logging {
+  implicit val kryo: Kryo = new Kryo()
+  kryo.register(classOf[MyExpression])
 
-  private val (expr, javaParamsSchema) = NativeConverters.deserializeExpression({
-    val bytes = new Array[Byte](serialized.remaining())
-    serialized.get(bytes)
-    bytes
-  }) match {
-    case (nondeterministic: Nondeterministic, paramsSchema) =>
-      nondeterministic.initialize(TaskContext.get.partitionId())
-      (nondeterministic, paramsSchema)
-    case (expr, paramsSchema) =>
-      (expr, paramsSchema)
+  private val (expr, javaParamsSchema) = {
+    val myExpression = NativeConverters.deserializeObject[MyExpression]({
+      val bytes = new Array[Byte](serialized.remaining())
+      serialized.get(bytes)
+      bytes
+    })
+
+    (myExpression.expr, myExpression.paramsSchema) match {
+      case (nondeterministic: Nondeterministic, paramsSchema) =>
+        nondeterministic.initialize(TaskContext.get.partitionId())
+        (nondeterministic, paramsSchema)
+      case (expr, paramsSchema) =>
+        (expr, paramsSchema)
+    }
   }
 
   private val dictionaryProvider: DictionaryProvider = new MapDictionaryProvider()

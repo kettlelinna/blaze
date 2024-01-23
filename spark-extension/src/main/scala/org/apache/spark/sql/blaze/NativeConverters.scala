@@ -15,6 +15,9 @@
  */
 package org.apache.spark.sql.blaze
 
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.{Input, Output}
+
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
@@ -283,6 +286,8 @@ object NativeConverters extends Logging {
     val wrapped: PhysicalExprNode = _wrapped
   }
 
+  case class MyExpression(expr: Expression with Serializable, paramsSchema: StructType)
+
   def convertExpr(sparkExpr: Expression): pb.PhysicalExprNode = {
     def fallbackToError: Expression => pb.PhysicalExprNode = { e =>
       throw new NotImplementedError(s"unsupported expression: (${e.getClass}) $e")
@@ -355,12 +360,15 @@ object NativeConverters extends Logging {
           logError("YYYYYYYYYYYYYYY  " + bound.asInstanceOf[ScalaUDF].function.getClass.toString)
         }
 
-        val serialized =
-          serializeExpression(bound.asInstanceOf[Expression with Serializable], paramsSchema)
+        implicit val kryo: Kryo = new Kryo()
+        kryo.register(classOf[MyExpression])
+
+        val serialized = serializeObject(MyExpression(bound.asInstanceOf[Expression with Serializable], paramsSchema))
+          // serializeExpression(bound.asInstanceOf[Expression with Serializable], paramsSchema)
 
         logError("+++++++++++++++++++++++++++++++++++++++++++")
-        val recoverExpr = deserializeExpression(serialized)
-        logError(recoverExpr._1.dataType.toString)
+        val recoverExpr = deserializeObject[MyExpression](serialized)
+        logError(recoverExpr.expr.dataType.toString)
         logError("-------------------------------------------")
 
         // build SparkUDFWrapperExpr
@@ -1104,6 +1112,17 @@ object NativeConverters extends Logging {
         (expr, paramsSchema)
       }
     }
+  }
+
+  def serializeObject[T](obj: T)(implicit kryo: Kryo): Array[Byte] = {
+    val output = new Output(4096, -1)
+    kryo.writeClassAndObject(output, obj)
+    output.toBytes
+  }
+
+  def deserializeObject[T](bytes: Array[Byte])(implicit kryo: Kryo): T = {
+    val input = new Input(bytes)
+    kryo.readClassAndObject(input).asInstanceOf[T]
   }
 
   private def arithDecimalReturnType(e: BinaryArithmetic): DataType = {
