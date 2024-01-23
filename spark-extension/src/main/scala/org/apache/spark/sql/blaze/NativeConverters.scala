@@ -353,11 +353,15 @@ object NativeConverters extends Logging {
             .map(ref => StructField("", ref.dataType, ref.nullable))
             .toSeq)
 
+        logInfo("XXXXXXXXXXXXXXXXX" + bound.getClass.toString)
+
         val serialized =
           serializeExpression(bound.asInstanceOf[Expression with Serializable], paramsSchema)
 
+        logInfo("+++++++++++++++++++++++++++++++++++++++++++")
         val recoverExpr = deserializeExpression(serialized)
-        logInfo("+++++++++++++++++++++++++++++++++++++++++++" + recoverExpr._1.dataType.toString)
+        logInfo(recoverExpr._1.dataType.toString)
+        logInfo("-------------------------------------------")
 
         // build SparkUDFWrapperExpr
         // TODO
