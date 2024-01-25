@@ -59,8 +59,6 @@ impl ProjectExec {
         let schema = Arc::new(Schema::new(
             expr.iter()
                 .map(|(e, name)| {
-                    log::info!("e.data_type(&input_schema) {}", e.data_type(&input_schema)?);
-
                     Ok(Field::new(
                         name,
                         e.data_type(&input_schema)?,
@@ -218,13 +216,14 @@ async fn execute_project_with_filtering(
         input.execute_projected(partition, context.clone(), &projection)?,
     )?;
 
-    log::info!("output_schema.clone() {}", output_schema.clone());
-
     context.output_with_sender("Project", output_schema.clone(), move |sender| async move {
         while let Some(batch) = input.next().await.transpose()? {
             let mut timer = baseline_metrics.elapsed_compute().timer();
             let output_batch =
                 cached_expr_evaluator.filter_project(&batch, output_schema.clone())?;
+
+            log::info!("output_batch.schema() {}", &output_batch.schema());
+
             drop(batch);
 
             baseline_metrics.record_output(output_batch.num_rows());
