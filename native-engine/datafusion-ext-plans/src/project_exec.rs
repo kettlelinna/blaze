@@ -62,7 +62,8 @@ impl ProjectExec {
                     Ok(Field::new(
                         name,
                         e.data_type(&input_schema)?,
-                        e.nullable(&input_schema)?,
+                        true,
+                        // e.nullable(&input_schema)?,
                     ))
                 })
                 .collect::<Result<Fields>>()?,
