@@ -63,7 +63,6 @@ impl ProjectExec {
                         name,
                         e.data_type(&input_schema)?,
                         true,
-                        // e.nullable(&input_schema)?,
                     ))
                 })
                 .collect::<Result<Fields>>()?,
