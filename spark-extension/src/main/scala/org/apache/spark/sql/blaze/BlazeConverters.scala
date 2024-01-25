@@ -138,7 +138,8 @@ object BlazeConverters extends Logging {
       case e: FileSourceScanExec if enableScan => // scan
         tryConvert(e, convertFileSourceScanExec)
       case e: ProjectExec if enableProject => // project
-        tryConvert(e, convertProjectExec)
+        // tryConvert(e, convertProjectExec)
+        convertProjectExec(e, 4)
       case e: FilterExec if enableFilter => // filter
         tryConvert(e, convertFilterExec)
       case e: SortExec if enableSort => // sort
@@ -285,8 +286,8 @@ object BlazeConverters extends Logging {
     addRenameColumnsExec(Shims.get.createNativeParquetScanExec(exec))
   }
 
-  def convertProjectExec(exec: ProjectExec): SparkPlan = {
-    logError(exec.schema.treeString)
+  def convertProjectExec(exec: ProjectExec, comeFrom: Int = 0): SparkPlan = {
+    logError(s"===========$comeFrom===============\n" + exec.schema.treeString)
     val (projectList, child) = (exec.projectList, exec.child)
     logDebug(s"Converting ProjectExec: ${Shims.get.simpleStringWithNodeId(exec)}")
     projectList.foreach(p => logDebug(s"  projectExpr: ${p}"))
@@ -569,7 +570,8 @@ object BlazeConverters extends Logging {
 
     if (exec.projectList != exec.child.output) {
       val project = ProjectExec(exec.projectList, nativeTakeOrdered)
-      tryConvert(project, convertProjectExec)
+      // tryConvert(project, convertProjectExec)
+      convertProjectExec(project, 3)
     } else {
       nativeTakeOrdered
     }
@@ -584,7 +586,7 @@ object BlazeConverters extends Logging {
           exec.copy(
             aggregateExpressions = transformedAggregateExprs,
             groupingExpressions = transformedGroupingExprs,
-            child = convertProjectExec(ProjectExec(projections, exec.child))))
+            child = convertProjectExec(ProjectExec(projections, exec.child), 1)))
       case None => // passthrough
     }
 
@@ -641,7 +643,7 @@ object BlazeConverters extends Logging {
           exec.copy(
             aggregateExpressions = transformedAggregateExprs,
             groupingExpressions = transformedGroupingExprs,
-            child = convertProjectExec(ProjectExec(projections, exec.child))))
+            child = convertProjectExec(ProjectExec(projections, exec.child), 2)))
       case None => // passthrough
     }
 
