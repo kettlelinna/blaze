@@ -76,13 +76,9 @@ case class BlazeColumnarOverrides(sparkSession: SparkSession) extends ColumnarRu
         }
 
         // generate convert strategy
-        BlazeConvertStrategy.apply(sparkPlan)
+        val sparkPlanTransformed = BlazeConvertStrategy(sparkPlan)
         logInfo("Blaze convert strategy for current stage:")
         dumpSimpleSparkPlanTreeNode(sparkPlan)
-
-        val sparkPlanTransformed = BlazeConverters.convertSparkPlanRecursively(sparkPlan)
-        logInfo("Blaze convert result for current stage:")
-        dumpSimpleSparkPlanTreeNode(sparkPlanTransformed)
 
         logInfo(s"Transformed spark plan after preColumnarTransitions:\n${sparkPlanTransformed
           .treeString(verbose = true, addSuffix = true)}")
