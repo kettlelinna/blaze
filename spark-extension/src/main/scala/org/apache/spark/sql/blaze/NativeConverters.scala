@@ -19,14 +19,13 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-
 import com.google.protobuf.ByteString
-import org.apache.spark.SparkEnv
+import org.apache.spark.{SparkConf, SparkEnv}
 import org.blaze.{protobuf => pb}
 import org.apache.spark.internal.Logging
+import org.apache.spark.serializer.JavaSerializer
 import org.apache.spark.sql.catalyst.expressions.{Abs, Acos, Add, Alias, And, Asin, Atan, AttributeReference, BitwiseAnd, BitwiseOr, BoundReference, CaseWhen, Cast, Ceil, CheckOverflow, Coalesce, Concat, ConcatWs, Contains, Cos, CreateArray, CreateNamedStruct, Divide, EndsWith, EqualTo, Exp, Expression, Floor, GetArrayItem, GetMapValue, GetStructField, GreaterThan, GreaterThanOrEqual, If, In, InSet, IsNotNull, IsNull, Length, LessThan, LessThanOrEqual, Like, Literal, Log, Log10, Log2, Lower, MakeDecimal, Md5, Multiply, Murmur3Hash, Not, NullIf, OctetLength, Or, Pmod, PromotePrecision, Remainder, Sha2, ShiftLeft, ShiftRight, Signum, Sin, Sqrt, StartsWith, StringRepeat, StringSpace, StringTrim, StringTrimLeft, StringTrimRight, Substring, Subtract, Tan, TruncDate, Unevaluable, UnscaledValue, Upper}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.aggregate.Average
@@ -358,8 +357,8 @@ object NativeConverters extends Logging {
             .map(ref => StructField("", ref.dataType, ref.nullable))
             .toSeq)
 
-        val serialized =
-          serializeExpression(bound.asInstanceOf[Expression with Serializable], paramsSchema)
+        val serializer = new JavaSerializer(new SparkConf()).newInstance()
+        val serialized = serializer.serialize((bound.asInstanceOf[Expression with Serializable], paramsSchema))
 
         // build SparkUDFWrapperExpr
         pb.PhysicalExprNode

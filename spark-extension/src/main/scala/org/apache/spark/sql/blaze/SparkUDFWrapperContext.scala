@@ -16,17 +16,16 @@
 package org.apache.spark.sql.blaze
 
 import java.nio.ByteBuffer
-
 import org.apache.arrow.c.ArrowArray
 import org.apache.arrow.c.Data
 import org.apache.arrow.vector.VectorSchemaRoot
 import org.apache.arrow.vector.dictionary.DictionaryProvider
 import org.apache.arrow.vector.dictionary.DictionaryProvider.MapDictionaryProvider
-import org.apache.spark.TaskContext
+import org.apache.spark.{SparkConf, TaskContext}
 import org.apache.spark.internal.Logging
+import org.apache.spark.serializer.JavaSerializer
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Nondeterministic
-import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
+import org.apache.spark.sql.catalyst.expressions.{Expression, Nondeterministic, UnsafeProjection}
 import org.apache.spark.sql.execution.blaze.arrowio.ColumnarHelper
 import org.apache.spark.sql.execution.blaze.arrowio.util.ArrowUtils
 import org.apache.spark.sql.execution.blaze.arrowio.util.ArrowWriter
@@ -35,12 +34,9 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
 
 case class SparkUDFWrapperContext(serialized: ByteBuffer) extends Logging {
+  private val serializer = new JavaSerializer(new SparkConf()).newInstance()
 
-  private val (expr, javaParamsSchema) = NativeConverters.deserializeExpression({
-    val bytes = new Array[Byte](serialized.remaining())
-    serialized.get(bytes)
-    bytes
-  }) match {
+  private val (expr, javaParamsSchema) = serializer.deserialize[(Expression with Serializable, StructType)](serialized) match {
     case (nondeterministic: Nondeterministic, paramsSchema) =>
       nondeterministic.initialize(TaskContext.get.partitionId())
       (nondeterministic, paramsSchema)
