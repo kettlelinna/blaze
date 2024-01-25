@@ -286,7 +286,7 @@ object BlazeConverters extends Logging {
   }
 
   def convertProjectExec(exec: ProjectExec): SparkPlan = {
-    logError(exec.schema.toString())
+    logError(exec.schema.treeString)
     val (projectList, child) = (exec.projectList, exec.child)
     logDebug(s"Converting ProjectExec: ${Shims.get.simpleStringWithNodeId(exec)}")
     projectList.foreach(p => logDebug(s"  projectExpr: ${p}"))
