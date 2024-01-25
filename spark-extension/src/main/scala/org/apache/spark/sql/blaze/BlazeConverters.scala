@@ -137,7 +137,7 @@ object BlazeConverters extends Logging {
       case e: BroadcastExchangeExec => tryConvert(e, convertBroadcastExchangeExec)
       case e: FileSourceScanExec if enableScan => // scan
         tryConvert(e, convertFileSourceScanExec)
-      case e: ProjectExec if enableProject => // project
+      case e: ProjectExec if enableProject && e.nodeName != "" => // project
         tryConvert(e, convertProjectExec)
       case e: FilterExec if enableFilter => // filter
         tryConvert(e, convertFilterExec)
